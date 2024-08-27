@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include <assert.h>
+#include <cassert>
 using namespace std;
 
 // Thresholds for battery health parameters
@@ -13,39 +13,34 @@ const float MAX_CHARGE_RATE = 0.8;
 // Enum to indicate the status of the measure
 enum MeasureStatus {
     OK,
-    TOO_LOW,
-    TOO_HIGH
+    OUT_OF_RANGE
 };
 
 // Pure function to get the status of a parameter
 MeasureStatus getMeasureStatus(float value, float min, float max) {
-    return (value < min) ? TOO_LOW : (value > max) ? TOO_HIGH : OK;
+    return (value < min || value > max) ? OUT_OF_RANGE : OK;
 }
 
 // Pure function to check all battery parameters and return whether it's OK
 bool batteryIsOk(float temperature, float soc, float chargeRate, string& breachMessage) {
-    // Determine the status of each parameter and build breachMessage
+    bool isOk = true;
     string breach = "";
-    
-    if (getMeasureStatus(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE) != OK) {
-        breach += "Temperature ";
-    }
-    
-    if (getMeasureStatus(soc, MIN_SOC, MAX_SOC) != OK) {
-        breach += "State of Charge ";
-    }
-    
-    if (getMeasureStatus(chargeRate, 0, MAX_CHARGE_RATE) != OK) {
-        breach += "Charge Rate ";
-    }
-    
-    if (breach != "") {
+
+    // Check temperature, SOC, and charge rate
+    isOk = (getMeasureStatus(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE) == OK &&
+            getMeasureStatus(soc, MIN_SOC, MAX_SOC) == OK &&
+            getMeasureStatus(chargeRate, 0, MAX_CHARGE_RATE) == OK);
+
+    if (!isOk) {
+        if (getMeasureStatus(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE) != OK) breach += "Temperature ";
+        if (getMeasureStatus(soc, MIN_SOC, MAX_SOC) != OK) breach += "State of Charge ";
+        if (getMeasureStatus(chargeRate, 0, MAX_CHARGE_RATE) != OK) breach += "Charge Rate ";
         breachMessage = "Battery is NOT OK due to " + breach + "being out of range.\n";
-        return false;
+    } else {
+        breachMessage = "Battery is OK.\n";
     }
-    
-    breachMessage = "Battery is OK.\n";
-    return true;
+
+    return isOk;
 }
 
 // Function to test various battery conditions
@@ -77,4 +72,3 @@ int main() {
     
     return 0;
 }
-
