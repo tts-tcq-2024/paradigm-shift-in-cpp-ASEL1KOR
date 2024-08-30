@@ -21,21 +21,26 @@ MeasureStatus getMeasureStatus(float value, float min, float max) {
     return (value < min || value > max) ? OUT_OF_RANGE : OK;
 }
 
-// Pure function to check all battery parameters and return whether it's OK
-bool batteryIsOk(float temperature, float soc, float chargeRate, string& breachMessage) {
-    bool isOk = true;
-    string breach = "";
+// Function to check a single battery parameter and return a message if out of range
+bool checkParameter(float value, float min, float max, const string& paramName, string& breachMessage) {
+    if (getMeasureStatus(value, min, max) == OUT_OF_RANGE) {
+        breachMessage += paramName + " ";
+        return false;
+    }
+    return true;
+}
 
-    // Check temperature, SOC, and charge rate
-    isOk = (getMeasureStatus(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE) == OK &&
-            getMeasureStatus(soc, MIN_SOC, MAX_SOC) == OK &&
-            getMeasureStatus(chargeRate, 0, MAX_CHARGE_RATE) == OK);
+// Function to check all battery parameters and return whether it's OK
+bool batteryIsOk(float temperature, float soc, float chargeRate, string& breachMessage) {
+    breachMessage = "";
+    bool isOk = true;
+
+    isOk &= checkParameter(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE, "Temperature", breachMessage);
+    isOk &= checkParameter(soc, MIN_SOC, MAX_SOC, "State of Charge", breachMessage);
+    isOk &= checkParameter(chargeRate, 0, MAX_CHARGE_RATE, "Charge Rate", breachMessage);
 
     if (!isOk) {
-        if (getMeasureStatus(temperature, MIN_TEMPERATURE, MAX_TEMPERATURE) != OK) breach += "Temperature ";
-        if (getMeasureStatus(soc, MIN_SOC, MAX_SOC) != OK) breach += "State of Charge ";
-        if (getMeasureStatus(chargeRate, 0, MAX_CHARGE_RATE) != OK) breach += "Charge Rate ";
-        breachMessage = "Battery is NOT OK due to " + breach + "being out of range.\n";
+        breachMessage = "Battery is NOT OK due to " + breachMessage + "being out of range.\n";
     } else {
         breachMessage = "Battery is OK.\n";
     }
